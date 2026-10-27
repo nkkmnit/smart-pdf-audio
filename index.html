@@ -1,14 +1,22 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart PDF Audio - Indian AI Factory</title>
+    <title>Smart Document Audio - Indian AI Factory</title>
+    
     <!-- PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
+    
+    <!-- Mammoth.js CDN for Word (.docx) Support -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- Tesseract.js CDN for OCR (Scanned / Printed image support) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
     <style>
         :root {
             --bg-color: #f3f4f6;
@@ -41,7 +49,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             padding: 12px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
         .app-container {
             max-width: 600px;
@@ -189,139 +197,135 @@
 <body>
     <div class="app-container">
         <header>
-            <button id="themeToggleBtn" class="theme-toggle">🌙 मोड</button>
+            <button id="themeToggleBtn" class="theme-toggle">🌙 Dark</button>
             <div class="brand">INDIAN AI FACTORY</div>
-            <h1>SMART PDF AUDIO</h1>
-            <p class="tagline">"अपनी पढ़ाई सुनिए, कभी भी, कहीं भी।"</p>
+            <h1>SMART DOCUMENT AUDIO</h1>
+            <p class="tagline">"Listen to your study material anytime, anywhere."</p>
         </header>
 
         <main>
             <section class="card privacy-card">
-                <p><strong>प्राइवेसी सूचना:</strong> आपकी PDF इसी डिवाइस के ब्राउज़र में प्रोसेस की जाती है। सर्वर पर कोई डेटा अपलोड नहीं होता।</p>
+                <p><strong>Privacy Notice:</strong> Your documents are processed locally in your browser. No data is uploaded to any server.</p>
             </section>
 
-            <!-- PDF Selection & Resume -->
+            <!-- File Selection -->
             <section class="card">
-                <h2>PDF चुनें</h2>
-                <input type="file" id="pdfFileInput" accept="application/pdf">
+                <h2>Select Document (PDF, Word, or Scanned Image/PDF)</h2>
+                <input type="file" id="fileInput" accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*">
                 <div id="resumeSection" class="info-box hidden">
-                    <button id="resumeProgressBtn" class="btn success-btn" style="width:100%; margin-bottom:8px;">पिछली प्रोग्रेस से जारी रखें</button>
+                    <button id="resumeProgressBtn" class="btn success-btn" style="width:100%; margin-bottom:8px;">Resume Last Progress</button>
                 </div>
-                <div id="pdfFileInfo" class="info-box hidden">
-                    <p><strong>फ़ाइल नाम:</strong> <span id="fileNameDisplay">-</span></p>
-                    <p><strong>कुल पेज:</strong> <span id="totalPageDisplay">0</span></p>
-                    <button id="closePdfBtn" class="btn secondary-btn" style="margin-top:8px;">PDF बंद करें</button>
+                <div id="fileInfo" class="info-box hidden">
+                    <p><strong>File Name:</strong> <span id="fileNameDisplay">-</span></p>
+                    <p><strong>Total Units/Pages:</strong> <span id="totalPageDisplay">0</span></p>
+                    <button id="closeFileBtn" class="btn secondary-btn" style="margin-top:8px;">Close Document</button>
                 </div>
             </section>
 
             <!-- Topic Search & Bookmarks -->
             <section class="card hidden" id="extraToolsSection">
-                <h2>लोकल टॉपिक सर्च और बुकमार्क</h2>
+                <h2>Local Keyword Search & Bookmarks</h2>
                 <div class="input-group">
-                    <input type="text" id="searchInput" placeholder="कीवर्ड खोजें (जैसे: अध्याय, परिभाषा)...">
-                    <button id="searchBtn" class="btn secondary-btn" style="margin-top:6px; width:100%;">सर्च करें</button>
+                    <input type="text" id="searchInput" placeholder="Search keyword...">
+                    <button id="searchBtn" class="btn secondary-btn" style="margin-top:6px; width:100%;">Search</button>
                 </div>
                 <div id="searchResults" class="search-results"></div>
-                <button id="addBookmarkBtn" class="btn secondary-btn" style="margin-top:8px; width:100%;">⭐ वर्तमान पेज बुकमार्क करें</button>
+                <button id="addBookmarkBtn" class="btn secondary-btn" style="margin-top:8px; width:100%;">⭐ Bookmark Current Unit</button>
                 <div id="bookmarkList" class="bookmark-list"></div>
             </section>
 
             <!-- Reading Settings -->
             <section class="card" id="settingsSection">
-                <h2>रीडिंग सेटिंग्स</h2>
+                <h2>Reading Settings</h2>
                 <div class="input-group">
-                    <label>शुरुआती पेज:</label>
+                    <label>Start Page / Unit:</label>
                     <input type="number" id="startPageInput" value="1" min="1">
                 </div>
                 <div class="input-group">
-                    <label>आखिरी पेज:</label>
+                    <label>End Page / Unit:</label>
                     <input type="number" id="endPageInput" value="1" min="1">
                 </div>
                 <div class="input-group">
-                    <label>एक बार में कितने पेज पढ़ें?</label>
+                    <label>Units per Session:</label>
                     <select id="sessionLimitSelect">
-                        <option value="1">1 पेज</option>
-                        <option value="5">5 पेज</option>
-                        <option value="10" selected>10 पेज</option>
-                        <option value="15">15 पेज</option>
-                        <option value="20">20 पेज</option>
+                        <option value="1">1 Unit</option>
+                        <option value="5">5 Units</option>
+                        <option value="10" selected>10 Units</option>
+                        <option value="15">15 Units</option>
+                        <option value="20">20 Units</option>
                     </select>
                 </div>
                 <div class="input-group">
-                    <label>स्लीप टाइमर (ऑटो-स्टॉप):</label>
+                    <label>Sleep Timer (Auto-stop):</label>
                     <select id="sleepTimerSelect">
-                        <option value="0">बंद (No Limit)</option>
-                        <option value="15">15 मिनट बाद</option>
-                        <option value="30">30 मिनट बाद</option>
-                        <option value="60">60 मिनट बाद</option>
+                        <option value="0">Disabled</option>
+                        <option value="15">After 15 mins</option>
+                        <option value="30">After 30 mins</option>
+                        <option value="60">After 60 mins</option>
                     </select>
                 </div>
                 <div class="input-group">
-                    <label>हिंदी आवाज़ चुनें:</label>
-                    <select id="voiceSelect"><option value="">लोड हो रहा है...</option></select>
+                    <label>Select Voice:</label>
+                    <select id="voiceSelect"><option value="">Loading voices...</option></select>
                 </div>
                 <div class="input-group">
-                    <label>पढ़ने की गति (Speed):</label>
+                    <label>Reading Speed:</label>
                     <select id="speedSelect">
                         <option value="0.75">0.75x</option>
-                        <option value="0.90">0.90x</option>
-                        <option value="1.00" selected>1.00x</option>
+                        <option value="0.90" selected>0.90x (Natural Pace)</option>
+                        <option value="1.00">1.00x</option>
                         <option value="1.10">1.10x</option>
                         <option value="1.25">1.25x</option>
                         <option value="1.50">1.50x</option>
-                        <option value="1.75">1.75x</option>
-                        <option value="2.00">2.00x</option>
                     </select>
                 </div>
             </section>
 
             <!-- Status and Controls -->
             <section class="card control-card">
-                <div id="statusDisplay" class="status-text">स्थिति: कृपया PDF चुनें।</div>
+                <div id="statusDisplay" class="status-text">Status: Please select a document.</div>
                 <div id="chunkInfoDisplay" class="chunk-text"></div>
 
                 <div class="button-grid">
-                    <button id="startBtn" class="btn primary-btn" disabled>पढ़ना शुरू करें</button>
-                    <button id="pauseBtn" class="btn warning-btn" disabled>रोकें</button>
+                    <button id="startBtn" class="btn primary-btn" disabled>Start Reading</button>
+                    <button id="pauseBtn" class="btn warning-btn" disabled>Pause</button>
                 </div>
                 <div class="button-grid" style="margin-bottom:10px;">
-                    <button id="resumeBtn" class="btn success-btn" disabled>फिर से शुरू करें</button>
-                    <button id="stopBtn" class="btn danger-btn" disabled>पढ़ना बंद करें</button>
+                    <button id="resumeBtn" class="btn success-btn" disabled>Resume</button>
+                    <button id="stopBtn" class="btn danger-btn" disabled>Stop</button>
                 </div>
 
                 <div class="navigation-grid">
-                    <button id="prevChunkBtn" class="btn secondary-btn" disabled>पिछला हिस्सा</button>
-                    <button id="nextChunkBtn" class="btn secondary-btn" disabled>अगला हिस्सा</button>
+                    <button id="prevChunkBtn" class="btn secondary-btn" disabled>Previous Chunk</button>
+                    <button id="nextChunkBtn" class="btn secondary-btn" disabled>Next Chunk</button>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>&copy; 2026 Indian AI Factory. सर्वाधिकार सुरक्षित।</p>
+            <p>&copy; 2026 Indian AI Factory. All rights reserved.</p>
         </footer>
     </div>
 
     <script>
-        let pdfDoc = null;
-        let totalPages = 0;
-        let extractedPagesText = [];
+        let docPagesText = [];
         let currentSessionChunks = [];
         let currentChunkIndex = 0;
         let synth = window.speechSynthesis;
         let voices = [];
-        let hindiVoice = null;
+        let selectedVoice = null;
         let sleepTimerTimeout = null;
         let bookmarks = [];
 
         const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const pdfFileInput = document.getElementById('pdfFileInput');
-        const pdfFileInfo = document.getElementById('pdfFileInfo');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
         const resumeSection = document.getElementById('resumeSection');
         const resumeProgressBtn = document.getElementById('resumeProgressBtn');
         const extraToolsSection = document.getElementById('extraToolsSection');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const totalPageDisplay = document.getElementById('totalPageDisplay');
-        const closePdfBtn = document.getElementById('closePdfBtn');
+        const closeFileBtn = document.getElementById('closeFileBtn');
         const startPageInput = document.getElementById('startPageInput');
         const endPageInput = document.getElementById('endPageInput');
         const sessionLimitSelect = document.getElementById('sessionLimitSelect');
@@ -344,117 +348,160 @@
         const addBookmarkBtn = document.getElementById('addBookmarkBtn');
         const bookmarkList = document.getElementById('bookmarkList');
 
-        // Dark Mode Toggle
         themeToggleBtn.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-            themeToggleBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ मोड' : '🌙 मोड';
+            themeToggleBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light' : '🌙 Dark';
         });
 
-        // Load Voices
         function loadVoices() {
             voices = synth.getVoices();
             voiceSelect.innerHTML = '';
-            let hindiVoices = voices.filter(v => v.lang.startsWith('hi') || v.lang.includes('IN'));
-            if (hindiVoices.length === 0) hindiVoices = voices;
-            hindiVoices.forEach((voice) => {
+            
+            // Prioritize female / natural sounding voices
+            voices.sort((a, b) => {
+                const aPref = a.name.toLowerCase().includes('female') || a.name.toLowerCase().includes('zira') || a.name.toLowerCase().includes('swara') || a.name.toLowerCase().includes('heera') || a.name.toLowerCase().includes('natural');
+                const bPref = b.name.toLowerCase().includes('female') || b.name.toLowerCase().includes('zira') || b.name.toLowerCase().includes('swara') || b.name.toLowerCase().includes('heera') || b.name.toLowerCase().includes('natural');
+                return bPref - aPref;
+            });
+
+            voices.forEach((voice, index) => {
                 const option = document.createElement('option');
-                option.value = voices.indexOf(voice);
+                option.value = index;
                 option.textContent = `${voice.name} (${voice.lang})`;
-                if (voice.lang.startsWith('hi')) {
+                if ((voice.lang.toLowerCase().includes('hi') || voice.lang.toLowerCase().includes('en')) && !selectedVoice) {
                     option.selected = true;
-                    hindiVoice = voice;
+                    selectedVoice = voice;
                 }
                 voiceSelect.appendChild(option);
             });
-            if (!hindiVoice && voices.length > 0) hindiVoice = voices[0];
+
+            if (!selectedVoice && voices.length > 0) selectedVoice = voices[0];
         }
+
         if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
         loadVoices();
-        voiceSelect.addEventListener('change', (e) => { hindiVoice = voices[e.target.value]; });
+        voiceSelect.addEventListener('change', (e) => { selectedVoice = voices[e.target.value]; });
 
-        // PDF Selection & Local Storage Check
-        pdfFileInput.addEventListener('change', async (e) => {
+        // File Selection Handler (PDF, Word .docx, Scanned Images)
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.type !== 'application/pdf') {
-                statusDisplay.textContent = 'त्रुटि: कृपया वैध PDF चुनें।';
-                return;
-            }
 
-            statusDisplay.textContent = 'PDF लोड हो रही है...';
+            statusDisplay.textContent = 'Processing document locally...';
+            docPagesText = [];
+
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                totalPages = pdfDoc.numPages;
+                
+                if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const totalPages = pdfDoc.numPages;
+
+                    let extractedTextFound = false;
+                    for (let i = 1; i <= totalPages; i++) {
+                        const page = await pdfDoc.getPage(i);
+                        const textContent = await page.getTextContent();
+                        let pageText = textContent.items.map(item => item.str).join(' ');
+                        pageText = pageText.replace(/\s+/g, ' ').trim();
+                        if (pageText.length > 20) {
+                            extractedTextFound = true;
+                        }
+                        docPagesText.push({ pageNum: i, text: pageText });
+                    }
+
+                    // Fallback to OCR if PDF appears scanned/empty
+                    if (!extractedTextFound) {
+                        statusDisplay.textContent = 'Scanned PDF detected. Running local OCR...';
+                        for (let i = 1; i <= totalPages; i++) {
+                            const page = await pdfDoc.getPage(i);
+                            const viewport = page.getViewport({ scale: 1.5 });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            
+                            const imageUrl = canvas.toDataURL('image/png');
+                            const ocrResult = await Tesseract.recognize(imageUrl, 'eng+hin');
+                            docPagesText.push({ pageNum: i, text: ocrResult.data.text.replace(/\s+/g, ' ').trim() });
+                        }
+                    }
+                } 
+                else if (file.name.endsWith('.docx') || file.type.includes('wordprocessingml')) {
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    let fullText = result.value || '';
+                    fullText = fullText.replace(/\s+/g, ' ').trim();
+
+                    const chunkSize = 1000;
+                    for (let i = 0; i < fullText.length; i += chunkSize) {
+                        let chunk = fullText.substring(i, i + chunkSize);
+                        let pageNum = Math.floor(i / chunkSize) + 1;
+                        docPagesText.push({ pageNum: pageNum, text: chunk });
+                    }
+                } 
+                else if (file.type.startsWith('image/')) {
+                    statusDisplay.textContent = 'Running OCR on image...';
+                    const imageUrl = URL.createObjectURL(file);
+                    const ocrResult = await Tesseract.recognize(imageUrl, 'eng+hin');
+                    docPagesText.push({ pageNum: 1, text: ocrResult.data.text.replace(/\s+/g, ' ').trim() });
+                } 
+                else {
+                    statusDisplay.textContent = 'Error: Please select a valid PDF, Word (.docx), or Image file.';
+                    return;
+                }
 
                 fileNameDisplay.textContent = file.name;
-                totalPageDisplay.textContent = totalPages;
-                pdfFileInfo.classList.remove('hidden');
+                totalPageDisplay.textContent = docPagesText.length;
+                fileInfo.classList.remove('hidden');
                 extraToolsSection.classList.remove('hidden');
 
                 startPageInput.value = 1;
-                endPageInput.value = totalPages;
+                endPageInput.value = docPagesText.length;
 
-                // Check saved progress
-                const savedProgress = localStorage.getItem('pdf_progress_' + file.name);
+                const savedProgress = localStorage.getItem('doc_progress_' + file.name);
                 if (savedProgress) {
                     resumeSection.classList.remove('hidden');
                 }
 
-                statusDisplay.textContent = 'PDF सफलतापूर्वक लोड हो गई है।';
+                statusDisplay.textContent = 'Document successfully loaded!';
                 startBtn.disabled = false;
             } catch (err) {
-                statusDisplay.textContent = 'त्रुटि: PDF पढ़ी नहीं जा सकी।';
+                statusDisplay.textContent = 'Error: Could not read document.';
             }
         });
 
-        // Close PDF
-        closePdfBtn.addEventListener('click', () => {
-            pdfDoc = null;
-            totalPages = 0;
-            extractedPagesText = [];
-            pdfFileInput.value = '';
-            pdfFileInfo.classList.add('hidden');
+        closeFileBtn.addEventListener('click', () => {
+            docPagesText = [];
+            currentSessionChunks = [];
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
             extraToolsSection.classList.add('hidden');
             resumeSection.classList.add('hidden');
             startBtn.disabled = true;
-            statusDisplay.textContent = 'PDF बंद कर दी गई है।';
+            statusDisplay.textContent = 'Document closed.';
             chunkInfoDisplay.textContent = '';
         });
 
-        // Start Reading
-        startBtn.addEventListener('click', async () => {
-            if (!pdfDoc) return;
+        startBtn.addEventListener('click', () => {
+            if (docPagesText.length === 0) return;
             let startPage = parseInt(startPageInput.value);
             let endPage = parseInt(endPageInput.value);
 
-            if (isNaN(startPage) || isNaN(endPage) || startPage < 1 || endPage > totalPages || startPage > endPage) {
-                statusDisplay.textContent = 'त्रुटि: कृपया सही पेज नंबर चुनें।';
+            if (isNaN(startPage) || isNaN(endPage) || startPage < 1 || endPage > docPagesText.length || startPage > endPage) {
+                statusDisplay.textContent = 'Error: Please select a valid range.';
                 return;
             }
 
-            statusDisplay.textContent = 'पेज एक्सट्रैक्ट किए जा रहे हैं...';
-            startBtn.disabled = true;
-
-            extractedPagesText = [];
-            for (let i = startPage; i <= endPage; i++) {
-                const page = await pdfDoc.getPage(i);
-                const textContent = await page.getTextContent();
-                const text = textContent.items.map(item => item.str).join(' ');
-                extractedPagesText.push({ pageNum: i, text: text.trim() });
-            }
-
-            prepareChunks();
+            prepareChunks(startPage, endPage);
             currentChunkIndex = 0;
             playCurrentChunk();
             setupSleepTimer();
         });
 
-        // Resume Progress
         resumeProgressBtn.addEventListener('click', () => {
-            const file = pdfFileInput.files[0];
+            const file = fileInput.files[0];
             if (!file) return;
-            const saved = JSON.parse(localStorage.getItem('pdf_progress_' + file.name));
+            const saved = JSON.parse(localStorage.getItem('doc_progress_' + file.name));
             if (saved) {
                 startPageInput.value = saved.startPage;
                 endPageInput.value = saved.endPage;
@@ -462,13 +509,15 @@
             }
         });
 
-        function prepareChunks() {
+        function prepareChunks(start, end) {
             const limit = parseInt(sessionLimitSelect.value);
+            const filteredPages = docPagesText.filter(p => p.pageNum >= start && p.pageNum <= end);
             currentSessionChunks = [];
-            for (let i = 0; i < extractedPagesText.length; i += limit) {
-                let chunkPages = extractedPagesText.slice(i, i + limit);
-                let combinedText = chunkPages.map(p => `पेज ${p.pageNum}. ${p.text}`).join(' ');
-                let rangeLabel = `पेज ${chunkPages[0].pageNum}–${chunkPages[chunkPages.length - 1].pageNum}`;
+
+            for (let i = 0; i < filteredPages.length; i += limit) {
+                let chunkPages = filteredPages.slice(i, i + limit);
+                let combinedText = chunkPages.map(p => `Unit ${p.pageNum}. ${p.text}`).join(' ');
+                let rangeLabel = `Part ${chunkPages[0].pageNum}–${chunkPages[chunkPages.length - 1].pageNum}`;
                 currentSessionChunks.push({ label: rangeLabel, text: combinedText, startPage: chunkPages[0].pageNum });
             }
         }
@@ -478,13 +527,12 @@
             synth.cancel();
 
             const chunk = currentSessionChunks[currentChunkIndex];
-            statusDisplay.textContent = `अभी पढ़े जा रहे हैं: ${chunk.label}`;
-            chunkInfoDisplay.textContent = `हिस्सा ${currentChunkIndex + 1} / ${currentSessionChunks.length}`;
+            statusDisplay.textContent = `Currently reading: ${chunk.label}`;
+            chunkInfoDisplay.textContent = `Chunk ${currentChunkIndex + 1} / ${currentSessionChunks.length}`;
 
-            // Save progress
-            const file = pdfFileInput.files[0];
+            const file = fileInput.files[0];
             if (file) {
-                localStorage.setItem('pdf_progress_' + file.name, JSON.stringify({
+                localStorage.setItem('doc_progress_' + file.name, JSON.stringify({
                     startPage: startPageInput.value,
                     endPage: endPageInput.value,
                     chunkIndex: currentChunkIndex
@@ -492,7 +540,9 @@
             }
 
             const utterance = new SpeechSynthesisUtterance(chunk.text);
-            if (hindiVoice) utterance.voice = hindiVoice;
+            const hasHindi = /[\u0900-\u097F]/.test(chunk.text);
+            utterance.lang = hasHindi ? 'hi-IN' : 'en-US';
+            if (selectedVoice) utterance.voice = selectedVoice;
             utterance.rate = parseFloat(speedSelect.value);
 
             utterance.onend = () => {
@@ -500,7 +550,7 @@
                     currentChunkIndex++;
                     playCurrentChunk();
                 } else {
-                    statusDisplay.textContent = 'पढ़ना पूरा हो गया है।';
+                    statusDisplay.textContent = 'Reading completed.';
                 }
             };
 
@@ -512,32 +562,30 @@
             startBtn.disabled = false;
         }
 
-        // Sleep Timer
         function setupSleepTimer() {
             if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
             const mins = parseInt(sleepTimerSelect.value);
             if (mins > 0) {
                 sleepTimerTimeout = setTimeout(() => {
                     synth.cancel();
-                    statusDisplay.textContent = 'स्लीप टाइमर के कारण ऑडियो रोक दिया गया है।';
+                    statusDisplay.textContent = 'Audio stopped by sleep timer.';
                 }, mins * 60 * 1000);
             }
         }
 
-        // Search feature
         searchBtn.addEventListener('click', () => {
             const query = searchInput.value.trim().toLowerCase();
-            if (!query || extractedPagesText.length === 0) return;
+            if (!query || docPagesText.length === 0) return;
             searchResults.innerHTML = '';
-            let matches = extractedPagesText.filter(p => p.text.toLowerCase().includes(query));
+            let matches = docPagesText.filter(p => p.text.toLowerCase().includes(query));
             if (matches.length === 0) {
-                searchResults.innerHTML = '<p>कोई परिणाम नहीं मिला।</p>';
+                searchResults.innerHTML = '<p>No results found.</p>';
                 return;
             }
             matches.slice(0, 5).forEach(m => {
                 let div = document.createElement('div');
                 div.className = 'bookmark-item';
-                div.textContent = `पेज ${m.pageNum}: ${m.text.substring(0, 40)}...`;
+                div.textContent = `Part ${m.pageNum}: ${m.text.substring(0, 40)}...`;
                 div.onclick = () => {
                     startPageInput.value = m.pageNum;
                     startBtn.click();
@@ -546,9 +594,8 @@
             });
         });
 
-        // Bookmarks
         addBookmarkBtn.addEventListener('click', () => {
-            if (extractedPagesText.length === 0) return;
+            if (docPagesText.length === 0) return;
             let currentChunk = currentSessionChunks[currentChunkIndex];
             if (!currentChunk) return;
             if (!bookmarks.includes(currentChunk.startPage)) {
@@ -562,7 +609,7 @@
             bookmarks.forEach(page => {
                 let div = document.createElement('div');
                 div.className = 'bookmark-item';
-                div.textContent = `⭐ बुकमार्क: पेज ${page}`;
+                div.textContent = `⭐ Bookmark: Part ${page}`;
                 div.onclick = () => {
                     startPageInput.value = page;
                     startBtn.click();
@@ -571,10 +618,9 @@
             });
         }
 
-        // Controls
-        pauseBtn.addEventListener('click', () => { if (synth.speaking) synth.pause(); statusDisplay.textContent = 'रोक दिया गया है।'; });
-        resumeBtn.addEventListener('click', () => { if (synth.paused) synth.resume(); statusDisplay.textContent = 'फिर से शुरू हो गया है।'; });
-        stopBtn.addEventListener('click', () => { synth.cancel(); statusDisplay.textContent = 'पढ़ना बंद कर दिया गया है।'; });
+        pauseBtn.addEventListener('click', () => { if (synth.speaking) synth.pause(); statusDisplay.textContent = 'Paused.'; });
+        resumeBtn.addEventListener('click', () => { if (synth.paused) synth.resume(); statusDisplay.textContent = 'Resumed.'; });
+        stopBtn.addEventListener('click', () => { synth.cancel(); statusDisplay.textContent = 'Reading stopped.'; });
         nextChunkBtn.addEventListener('click', () => { if (currentChunkIndex < currentSessionChunks.length - 1) { currentChunkIndex++; playCurrentChunk(); } });
         prevChunkBtn.addEventListener('click', () => { if (currentChunkIndex > 0) { currentChunkIndex--; playCurrentChunk(); } });
     </script>
