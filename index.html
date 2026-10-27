@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart PDF Audio - Indian AI Factory</title>
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #d1d5db;
+            --primary: #4f46e5;
+            --privacy-bg: #e0e7ff;
+            --privacy-text: #3730a3;
+        }
+        body.dark-mode {
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --primary: #6366f1;
+            --privacy-bg: #312e81;
+            --privacy-text: #e0e7ff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 12px;
+            line-height: 1.5;
+        }
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .brand {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+        header h1 {
+            font-size: 1.75rem;
+            margin: 4px 0;
+        }
+        .tagline {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+        .privacy-card {
+            background-color: var(--privacy-bg);
+            color: var(--privacy-text);
+            font-size: 0.9rem;
+            border: none;
+        }
+        input[type="file"], select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 6px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .hidden {
+            display: none;
+        }
+        .info-box {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+        .status-text {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        .chunk-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .navigation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .primary-btn { background-color: var(--primary); color: white; }
+        .warning-btn { background-color: #d97706; color: white; }
+        .success-btn { background-color: #059669; color: white; }
+        .danger-btn { background-color: #dc2626; color: white; }
+        .secondary-btn { background-color: var(--border-color); color: var(--text-color); }
+        .bookmark-list, .search-results {
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 8px;
+            font-size: 0.85rem;
+        }
+        .bookmark-item {
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.03);
+            margin-bottom: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <button id="themeToggleBtn" class="theme-toggle">🌙 मोड</button>
+            <div class="brand">INDIAN AI FACTORY</div>
+            <h1>SMART PDF AUDIO</h1>
+            <p class="tagline">"अपनी पढ़ाई सुनिए, कभी भी, कहीं भी।"</p>
+        </header>
+
+        <main>
+            <section class="card privacy-card">
+                <p><strong>प्राइवेसी सूचना:</strong> आपकी PDF इसी डिवाइस के ब्राउज़र में प्रोसेस की जाती है। सर्वर पर कोई डेटा अपलोड नहीं होता।</p>
+            </section>
+
+            <!-- PDF Selection & Resume -->
+            <section class="card">
+                <h2>PDF चुनें</h2>
+                <input type="file" id="pdfFileInput" accept="application/pdf">
+                <div id="resumeSection" class="info-box hidden">
+                    <button id="resumeProgressBtn" class="btn success-btn" style="width:100%; margin-bottom:8px;">पिछली प्रोग्रेस से जारी रखें</button>
+                </div>
+                <div id="pdfFileInfo" class="info-box hidden">
+                    <p><strong>फ़ाइल नाम:</strong> <span id="fileNameDisplay">-</span></p>
+                    <p><strong>कुल पेज:</strong> <span id="totalPageDisplay">0</span></p>
+                    <button id="closePdfBtn" class="btn secondary-btn" style="margin-top:8px;">PDF बंद करें</button>
+                </div>
+            </section>
+
+            <!-- Topic Search & Bookmarks -->
+            <section class="card hidden" id="extraToolsSection">
+                <h2>लोकल टॉपिक सर्च और बुकमार्क</h2>
+                <div class="input-group">
+                    <input type="text" id="searchInput" placeholder="कीवर्ड खोजें (जैसे: अध्याय, परिभाषा)...">
+                    <button id="searchBtn" class="btn secondary-btn" style="margin-top:6px; width:100%;">सर्च करें</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+                <button id="addBookmarkBtn" class="btn secondary-btn" style="margin-top:8px; width:100%;">⭐ वर्तमान पेज बुकमार्क करें</button>
+                <div id="bookmarkList" class="bookmark-list"></div>
+            </section>
+
+            <!-- Reading Settings -->
+            <section class="card" id="settingsSection">
+                <h2>रीडिंग सेटिंग्स</h2>
+                <div class="input-group">
+                    <label>शुरुआती पेज:</label>
+                    <input type="number" id="startPageInput" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>आखिरी पेज:</label>
+                    <input type="number" id="endPageInput" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>एक बार में कितने पेज पढ़ें?</label>
+                    <select id="sessionLimitSelect">
+                        <option value="1">1 पेज</option>
+                        <option value="5">5 पेज</option>
+                        <option value="10" selected>10 पेज</option>
+                        <option value="15">15 पेज</option>
+                        <option value="20">20 पेज</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>स्लीप टाइमर (ऑटो-स्टॉप):</label>
+                    <select id="sleepTimerSelect">
+                        <option value="0">बंद (No Limit)</option>
+                        <option value="15">15 मिनट बाद</option>
+                        <option value="30">30 मिनट बाद</option>
+                        <option value="60">60 मिनट बाद</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>हिंदी आवाज़ चुनें:</label>
+                    <select id="voiceSelect"><option value="">लोड हो रहा है...</option></select>
+                </div>
+                <div class="input-group">
+                    <label>पढ़ने की गति (Speed):</label>
+                    <select id="speedSelect">
+                        <option value="0.75">0.75x</option>
+                        <option value="0.90">0.90x</option>
+                        <option value="1.00" selected>1.00x</option>
+                        <option value="1.10">1.10x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.50">1.50x</option>
+                        <option value="1.75">1.75x</option>
+                        <option value="2.00">2.00x</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Status and Controls -->
+            <section class="card control-card">
+                <div id="statusDisplay" class="status-text">स्थिति: कृपया PDF चुनें।</div>
+                <div id="chunkInfoDisplay" class="chunk-text"></div>
+
+                <div class="button-grid">
+                    <button id="startBtn" class="btn primary-btn" disabled>पढ़ना शुरू करें</button>
+                    <button id="pauseBtn" class="btn warning-btn" disabled>रोकें</button>
+                </div>
+                <div class="button-grid" style="margin-bottom:10px;">
+                    <button id="resumeBtn" class="btn success-btn" disabled>फिर से शुरू करें</button>
+                    <button id="stopBtn" class="btn danger-btn" disabled>पढ़ना बंद करें</button>
+                </div>
+
+                <div class="navigation-grid">
+                    <button id="prevChunkBtn" class="btn secondary-btn" disabled>पिछला हिस्सा</button>
+                    <button id="nextChunkBtn" class="btn secondary-btn" disabled>अगला हिस्सा</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Indian AI Factory. सर्वाधिकार सुरक्षित।</p>
+        </footer>
+    </div>
+
+    <script>
+        let pdfDoc = null;
+        let totalPages = 0;
+        let extractedPagesText = [];
+        let currentSessionChunks = [];
+        let currentChunkIndex = 0;
+        let synth = window.speechSynthesis;
+        let voices = [];
+        let hindiVoice = null;
+        let sleepTimerTimeout = null;
+        let bookmarks = [];
+
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const pdfFileInput = document.getElementById('pdfFileInput');
+        const pdfFileInfo = document.getElementById('pdfFileInfo');
+        const resumeSection = document.getElementById('resumeSection');
+        const resumeProgressBtn = document.getElementById('resumeProgressBtn');
+        const extraToolsSection = document.getElementById('extraToolsSection');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const totalPageDisplay = document.getElementById('totalPageDisplay');
+        const closePdfBtn = document.getElementById('closePdfBtn');
+        const startPageInput = document.getElementById('startPageInput');
+        const endPageInput = document.getElementById('endPageInput');
+        const sessionLimitSelect = document.getElementById('sessionLimitSelect');
+        const sleepTimerSelect = document.getElementById('sleepTimerSelect');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const speedSelect = document.getElementById('speedSelect');
+
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const prevChunkBtn = document.getElementById('prevChunkBtn');
+        const nextChunkBtn = document.getElementById('nextChunkBtn');
+
+        const statusDisplay = document.getElementById('statusDisplay');
+        const chunkInfoDisplay = document.getElementById('chunkInfoDisplay');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchResults = document.getElementById('searchResults');
+        const addBookmarkBtn = document.getElementById('addBookmarkBtn');
+        const bookmarkList = document.getElementById('bookmarkList');
+
+        // Dark Mode Toggle
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            themeToggleBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ मोड' : '🌙 मोड';
+        });
+
+        // Load Voices
+        function loadVoices() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+            let hindiVoices = voices.filter(v => v.lang.startsWith('hi') || v.lang.includes('IN'));
+            if (hindiVoices.length === 0) hindiVoices = voices;
+            hindiVoices.forEach((voice) => {
+                const option = document.createElement('option');
+                option.value = voices.indexOf(voice);
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.lang.startsWith('hi')) {
+                    option.selected = true;
+                    hindiVoice = voice;
+                }
+                voiceSelect.appendChild(option);
+            });
+            if (!hindiVoice && voices.length > 0) hindiVoice = voices[0];
+        }
+        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+        loadVoices();
+        voiceSelect.addEventListener('change', (e) => { hindiVoice = voices[e.target.value]; });
+
+        // PDF Selection & Local Storage Check
+        pdfFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.type !== 'application/pdf') {
+                statusDisplay.textContent = 'त्रुटि: कृपया वैध PDF चुनें।';
+                return;
+            }
+
+            statusDisplay.textContent = 'PDF लोड हो रही है...';
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                totalPages = pdfDoc.numPages;
+
+                fileNameDisplay.textContent = file.name;
+                totalPageDisplay.textContent = totalPages;
+                pdfFileInfo.classList.remove('hidden');
+                extraToolsSection.classList.remove('hidden');
+
+                startPageInput.value = 1;
+                endPageInput.value = totalPages;
+
+                // Check saved progress
+                const savedProgress = localStorage.getItem('pdf_progress_' + file.name);
+                if (savedProgress) {
+                    resumeSection.classList.remove('hidden');
+                }
+
+                statusDisplay.textContent = 'PDF सफलतापूर्वक लोड हो गई है।';
+                startBtn.disabled = false;
+            } catch (err) {
+                statusDisplay.textContent = 'त्रुटि: PDF पढ़ी नहीं जा सकी।';
+            }
+        });
+
+        // Close PDF
+        closePdfBtn.addEventListener('click', () => {
+            pdfDoc = null;
+            totalPages = 0;
+            extractedPagesText = [];
+            pdfFileInput.value = '';
+            pdfFileInfo.classList.add('hidden');
+            extraToolsSection.classList.add('hidden');
+            resumeSection.classList.add('hidden');
+            startBtn.disabled = true;
+            statusDisplay.textContent = 'PDF बंद कर दी गई है।';
+            chunkInfoDisplay.textContent = '';
+        });
+
+        // Start Reading
+        startBtn.addEventListener('click', async () => {
+            if (!pdfDoc) return;
+            let startPage = parseInt(startPageInput.value);
+            let endPage = parseInt(endPageInput.value);
+
+            if (isNaN(startPage) || isNaN(endPage) || startPage < 1 || endPage > totalPages || startPage > endPage) {
+                statusDisplay.textContent = 'त्रुटि: कृपया सही पेज नंबर चुनें।';
+                return;
+            }
+
+            statusDisplay.textContent = 'पेज एक्सट्रैक्ट किए जा रहे हैं...';
+            startBtn.disabled = true;
+
+            extractedPagesText = [];
+            for (let i = startPage; i <= endPage; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const text = textContent.items.map(item => item.str).join(' ');
+                extractedPagesText.push({ pageNum: i, text: text.trim() });
+            }
+
+            prepareChunks();
+            currentChunkIndex = 0;
+            playCurrentChunk();
+            setupSleepTimer();
+        });
+
+        // Resume Progress
+        resumeProgressBtn.addEventListener('click', () => {
+            const file = pdfFileInput.files[0];
+            if (!file) return;
+            const saved = JSON.parse(localStorage.getItem('pdf_progress_' + file.name));
+            if (saved) {
+                startPageInput.value = saved.startPage;
+                endPageInput.value = saved.endPage;
+                startBtn.click();
+            }
+        });
+
+        function prepareChunks() {
+            const limit = parseInt(sessionLimitSelect.value);
+            currentSessionChunks = [];
+            for (let i = 0; i < extractedPagesText.length; i += limit) {
+                let chunkPages = extractedPagesText.slice(i, i + limit);
+                let combinedText = chunkPages.map(p => `पेज ${p.pageNum}. ${p.text}`).join(' ');
+                let rangeLabel = `पेज ${chunkPages[0].pageNum}–${chunkPages[chunkPages.length - 1].pageNum}`;
+                currentSessionChunks.push({ label: rangeLabel, text: combinedText, startPage: chunkPages[0].pageNum });
+            }
+        }
+
+        function playCurrentChunk() {
+            if (currentSessionChunks.length === 0) return;
+            synth.cancel();
+
+            const chunk = currentSessionChunks[currentChunkIndex];
+            statusDisplay.textContent = `अभी पढ़े जा रहे हैं: ${chunk.label}`;
+            chunkInfoDisplay.textContent = `हिस्सा ${currentChunkIndex + 1} / ${currentSessionChunks.length}`;
+
+            // Save progress
+            const file = pdfFileInput.files[0];
+            if (file) {
+                localStorage.setItem('pdf_progress_' + file.name, JSON.stringify({
+                    startPage: startPageInput.value,
+                    endPage: endPageInput.value,
+                    chunkIndex: currentChunkIndex
+                }));
+            }
+
+            const utterance = new SpeechSynthesisUtterance(chunk.text);
+            if (hindiVoice) utterance.voice = hindiVoice;
+            utterance.rate = parseFloat(speedSelect.value);
+
+            utterance.onend = () => {
+                if (currentChunkIndex < currentSessionChunks.length - 1) {
+                    currentChunkIndex++;
+                    playCurrentChunk();
+                } else {
+                    statusDisplay.textContent = 'पढ़ना पूरा हो गया है।';
+                }
+            };
+
+            synth.speak(utterance);
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            prevChunkBtn.disabled = currentChunkIndex === 0;
+            nextChunkBtn.disabled = currentChunkIndex === currentSessionChunks.length - 1;
+            startBtn.disabled = false;
+        }
+
+        // Sleep Timer
+        function setupSleepTimer() {
+            if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
+            const mins = parseInt(sleepTimerSelect.value);
+            if (mins > 0) {
+                sleepTimerTimeout = setTimeout(() => {
+                    synth.cancel();
+                    statusDisplay.textContent = 'स्लीप टाइमर के कारण ऑडियो रोक दिया गया है।';
+                }, mins * 60 * 1000);
+            }
+        }
+
+        // Search feature
+        searchBtn.addEventListener('click', () => {
+            const query = searchInput.value.trim().toLowerCase();
+            if (!query || extractedPagesText.length === 0) return;
+            searchResults.innerHTML = '';
+            let matches = extractedPagesText.filter(p => p.text.toLowerCase().includes(query));
+            if (matches.length === 0) {
+                searchResults.innerHTML = '<p>कोई परिणाम नहीं मिला।</p>';
+                return;
+            }
+            matches.slice(0, 5).forEach(m => {
+                let div = document.createElement('div');
+                div.className = 'bookmark-item';
+                div.textContent = `पेज ${m.pageNum}: ${m.text.substring(0, 40)}...`;
+                div.onclick = () => {
+                    startPageInput.value = m.pageNum;
+                    startBtn.click();
+                };
+                searchResults.appendChild(div);
+            });
+        });
+
+        // Bookmarks
+        addBookmarkBtn.addEventListener('click', () => {
+            if (extractedPagesText.length === 0) return;
+            let currentChunk = currentSessionChunks[currentChunkIndex];
+            if (!currentChunk) return;
+            if (!bookmarks.includes(currentChunk.startPage)) {
+                bookmarks.push(currentChunk.startPage);
+                renderBookmarks();
+            }
+        });
+
+        function renderBookmarks() {
+            bookmarkList.innerHTML = '';
+            bookmarks.forEach(page => {
+                let div = document.createElement('div');
+                div.className = 'bookmark-item';
+                div.textContent = `⭐ बुकमार्क: पेज ${page}`;
+                div.onclick = () => {
+                    startPageInput.value = page;
+                    startBtn.click();
+                };
+                bookmarkList.appendChild(div);
+            });
+        }
+
+        // Controls
+        pauseBtn.addEventListener('click', () => { if (synth.speaking) synth.pause(); statusDisplay.textContent = 'रोक दिया गया है।'; });
+        resumeBtn.addEventListener('click', () => { if (synth.paused) synth.resume(); statusDisplay.textContent = 'फिर से शुरू हो गया है।'; });
+        stopBtn.addEventListener('click', () => { synth.cancel(); statusDisplay.textContent = 'पढ़ना बंद कर दिया गया है।'; });
+        nextChunkBtn.addEventListener('click', () => { if (currentChunkIndex < currentSessionChunks.length - 1) { currentChunkIndex++; playCurrentChunk(); } });
+        prevChunkBtn.addEventListener('click', () => { if (currentChunkIndex > 0) { currentChunkIndex--; playCurrentChunk(); } });
+    </script>
+</body>
+</html>
