@@ -365,7 +365,7 @@
             
             voiceSelect.innerHTML = '';
             
-            // Sort to put Hindi/English at the top, but keep ALL available voices in the list
+            // Sort to put Hindi voices on top, followed by English, then others
             voices.sort((a, b) => {
                 const aLang = a.lang.toLowerCase();
                 const bLang = b.lang.toLowerCase();
@@ -395,9 +395,8 @@
         if (synth.onvoiceschanged !== undefined) {
             synth.onvoiceschanged = loadVoices;
         }
-        // Fallback for mobile browsers where voices load with slight delay
-        setTimeout(loadVoices, 500);
-        setTimeout(loadVoices, 1500);
+        // Multiple fallback retries for mobile browser asynchronous voice loading
+        [200, 500, 1000, 2000, 3000].forEach(delay => setTimeout(loadVoices, delay));
 
         voiceSelect.addEventListener('change', (e) => { 
             selectedVoice = voices[e.target.value]; 
@@ -477,11 +476,6 @@
                 startPageInput.value = 1;
                 endPageInput.value = docPagesText.length;
 
-                const savedProgress = localStorage.getItem('doc_progress_' + file.name);
-                if (savedProgress) {
-                    resumeSection.classList.remove('hidden');
-                }
-
                 statusDisplay.textContent = 'Document successfully loaded!';
                 startBtn.disabled = false;
             } catch (err) {
@@ -503,7 +497,6 @@
 
         function prepareChunksFrom(start, end) {
             const limit = parseInt(sessionLimitSelect.value);
-            // Filter pages starting strictly from user's specified startPage up to endPage
             const filteredPages = docPagesText.filter(p => p.pageNum >= start && p.pageNum <= end);
             currentSessionChunks = [];
 
@@ -530,7 +523,6 @@
                 return;
             }
 
-            // Generate chunks starting precisely from startPage
             prepareChunksFrom(startPage, endPage);
             
             if (currentSessionChunks.length === 0) {
@@ -543,20 +535,13 @@
             setupSleepTimer();
         });
 
-        resumeProgressBtn.addEventListener('click', () => {
-            const file = fileInput.files[0];
-            if (!file) return;
-            const saved = JSON.parse(localStorage.getItem('doc_progress_' + file.name));
-            if (saved) {
-                startPageInput.value = saved.startPage;
-                endPageInput.value = saved.endPage;
-                startBtn.click();
-            }
-        });
-
         function playCurrentChunk() {
             if (currentSessionChunks.length === 0) return;
-            synth.cancel();
+            
+            // Ensure any pending speech is cleared immediately
+            if (synth.speaking || synth.pending) {
+                synth.cancel();
+            }
 
             const chunk = currentSessionChunks[currentChunkIndex];
             statusDisplay.textContent = `Currently reading: ${chunk.label}`;
@@ -572,9 +557,19 @@
             }
 
             const utterance = new SpeechSynthesisUtterance(chunk.text);
+            
+            // Force Hindi language code if text contains Hindi characters or if selected voice is Hindi
             const hasHindi = /[\u0900-\u097F]/.test(chunk.text);
-            utterance.lang = hasHindi ? 'hi-IN' : 'en-US';
-            if (selectedVoice) utterance.voice = selectedVoice;
+            if (hasHindi || (selectedVoice && selectedVoice.lang.toLowerCase().includes('hi'))) {
+                utterance.lang = 'hi-IN';
+            } else {
+                utterance.lang = 'en-US';
+            }
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            
             utterance.rate = parseFloat(speedSelect.value);
 
             utterance.onend = () => {
@@ -586,7 +581,15 @@
                 }
             };
 
-            synth.speak(utterance);
+            utterance.onerror = (e) => {
+                statusDisplay.textContent = 'Playback error occurred. Try tapping Start again.';
+            };
+
+            // Small delay to ensure mobile synthesis queue is cleared
+            setTimeout(() => {
+                synth.speak(utterance);
+            }, 50);
+
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
             prevChunkBtn.disabled = currentChunkIndex === 0;
