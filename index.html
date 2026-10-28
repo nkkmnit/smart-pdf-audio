@@ -4,93 +4,256 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Document Audio - Indian AI Factory</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    
     <!-- PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
+    
     <!-- Mammoth.js CDN for Word (.docx) Support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <!-- Tesseract.js CDN for Local OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-</head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen p-3 sm:p-6 flex flex-col justify-between transition-colors duration-200">
 
-    <div class="max-w-md mx-auto w-full">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-4">
-            <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full">Indian AI Factory</span>
-                <h1 class="text-xl sm:text-2xl font-black mt-1">SMART DOCUMENT AUDIO</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 italic">"Listen to your study material anytime, anywhere."</p>
-            </div>
-            <button id="darkModeToggle" class="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-base" title="Toggle Dark Mode">
-                🌙
-            </button>
+    <!-- Tesseract.js CDN for OCR (Scanned / Printed image support) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #d1d5db;
+            --primary: #4f46e5;
+            --privacy-bg: #e0e7ff;
+            --privacy-text: #3730a3;
+        }
+        body.dark-mode {
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --primary: #6366f1;
+            --privacy-bg: #312e81;
+            --privacy-text: #e0e7ff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 12px;
+            line-height: 1.6;
+        }
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .brand {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        header h1 {
+            font-size: 1.75rem;
+            margin: 4px 0;
+        }
+        .tagline {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+        .privacy-card {
+            background-color: var(--privacy-bg);
+            color: var(--privacy-text);
+            font-size: 0.9rem;
+            border: none;
+            text-align: center;
+        }
+        input[type="file"], select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 6px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .hidden {
+            display: none;
+        }
+        .info-box {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+        .status-text {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        .chunk-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .navigation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .primary-btn { background-color: var(--primary); color: white; }
+        .warning-btn { background-color: #d97706; color: white; }
+        .success-btn { background-color: #059669; color: white; }
+        .danger-btn { background-color: #dc2626; color: white; }
+        .secondary-btn { background-color: var(--border-color); color: var(--text-color); }
+        .bookmark-list, .search-results {
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 8px;
+            font-size: 0.85rem;
+        }
+        .bookmark-item {
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.03);
+            margin-bottom: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <button id="themeToggleBtn" class="theme-toggle">🌙 Dark</button>
+            <div class="brand">INDIAN AI FACTORY</div>
+            <h1>SMART DOCUMENT AUDIO</h1>
+            <p class="tagline">"Listen to your study material anytime, anywhere."</p>
         </header>
 
-        <!-- Privacy Notice -->
-        <section class="bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 p-3 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 mb-4 shadow-sm">
-            <p><strong>Privacy Notice:</strong> 100% local browser processing. No server uploads or cloud storage used.</p>
-        </section>
+        <main>
+            <section class="card privacy-card">
+                <p><strong>Privacy Notice:</strong> Your documents are processed locally in your browser. No data is uploaded to any server.</p>
+            </section>
 
-        <!-- File Upload Section -->
-        <section class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm mb-4 border border-slate-100 dark:border-slate-700">
-            <h2 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">📁 Upload Document (PDF, Word, or Image)</h2>
-            <input type="file" id="fileInput" accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-950 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer">
-            
-            <div id="resumeSection" class="hidden mt-2">
-                <button id="resumeProgressBtn" class="w-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-semibold py-2 px-3 rounded-lg transition-colors">Resume Last Progress</button>
-            </div>
-
-            <div id="fileInfo" class="hidden mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 text-xs">
-                <p class="text-slate-600 dark:text-slate-300 truncate"><strong>File Name:</strong> <span id="fileNameDisplay">-</span></p>
-                <p class="text-slate-600 dark:text-slate-300 mt-1"><strong>Total Units/Pages:</strong> <span id="totalPageDisplay">0</span></p>
-                <button id="closeFileBtn" class="mt-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-medium py-1 px-3 rounded-lg transition-colors">Close Document</button>
-            </div>
-        </section>
-
-        <!-- Topic Search & Bookmarks -->
-        <section class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm mb-4 border border-slate-100 dark:border-slate-700 hidden" id="extraToolsSection">
-            <h2 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">🔍 Keyword Search & Bookmarks</h2>
-            <div class="flex gap-2 mb-2">
-                <input type="text" id="searchInput" placeholder="Search keyword..." class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                <button id="searchBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors">Search</button>
-            </div>
-            <div id="searchResults" class="max-h-24 overflow-y-auto text-xs space-y-1 mb-2"></div>
-            <div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
-                <button id="addBookmarkBtn" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors">⭐ Bookmark Unit</button>
-                <span id="bookmarkCount" class="text-[11px] text-slate-500 dark:text-slate-400">Bookmarks: 0</span>
-            </div>
-            <div id="bookmarkList" class="max-h-20 overflow-y-auto text-xs mt-2 space-y-1"></div>
-        </section>
-
-        <!-- Reading Settings -->
-        <section class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm mb-4 border border-slate-100 dark:border-slate-700">
-            <h2 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2.5">⚙️ Reading Settings</h2>
-            
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Start Page / Unit</label>
-                    <input type="number" id="startPageInput" value="1" min="1" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <!-- File Selection -->
+            <section class="card">
+                <h2>Select Document (PDF, Word, or Scanned Image/PDF)</h2>
+                <input type="file" id="fileInput" accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*">
+                <div id="resumeSection" class="info-box hidden">
+                    <button id="resumeProgressBtn" class="btn success-btn" style="width:100%; margin-bottom:8px;">Resume Last Progress</button>
                 </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">End Page / Unit</label>
-                    <input type="number" id="endPageInput" value="1" min="1" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                <div id="fileInfo" class="info-box hidden">
+                    <p><strong>File Name:</strong> <span id="fileNameDisplay">-</span></p>
+                    <p><strong>Total Units/Pages:</strong> <span id="totalPageDisplay">0</span></p>
+                    <button id="closeFileBtn" class="btn secondary-btn" style="margin-top:8px;">Close Document</button>
                 </div>
-            </div>
+            </section>
 
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1" title="Number of pages/units combined in a single continuous audio session">Units per Session ⓘ</label>
-                    <select id="sessionLimitSelect" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <!-- Topic Search & Bookmarks -->
+            <section class="card hidden" id="extraToolsSection">
+                <h2>Local Keyword Search & Bookmarks</h2>
+                <div class="input-group">
+                    <input type="text" id="searchInput" placeholder="Search keyword...">
+                    <button id="searchBtn" class="btn secondary-btn" style="margin-top:6px; width:100%;">Search</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+                <button id="addBookmarkBtn" class="btn secondary-btn" style="margin-top:8px; width:100%;">⭐ Bookmark Current Unit</button>
+                <div id="bookmarkList" class="bookmark-list"></div>
+            </section>
+
+            <!-- Reading Settings -->
+            <section class="card" id="settingsSection">
+                <h2>Reading Settings</h2>
+                <div class="input-group">
+                    <label>Start Page / Unit:</label>
+                    <input type="number" id="startPageInput" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>End Page / Unit:</label>
+                    <input type="number" id="endPageInput" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Units per Session (Pages per Audio Part):</label>
+                    <select id="sessionLimitSelect">
                         <option value="1">1 Unit</option>
                         <option value="5">5 Units</option>
                         <option value="10" selected>10 Units</option>
@@ -98,66 +261,58 @@
                         <option value="20">20 Units</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Sleep Timer</label>
-                    <select id="sleepTimerSelect" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                <div class="input-group">
+                    <label>Sleep Timer (Auto-stop):</label>
+                    <select id="sleepTimerSelect">
                         <option value="0">Disabled</option>
-                        <option value="15">15 mins</option>
-                        <option value="30">30 mins</option>
-                        <option value="60">60 mins</option>
+                        <option value="15">After 15 mins</option>
+                        <option value="30">After 30 mins</option>
+                        <option value="60">After 60 mins</option>
                     </select>
                 </div>
-            </div>
+                <div class="input-group">
+                    <label>Select Voice:</label>
+                    <select id="voiceSelect"><option value="">Loading voices...</option></select>
+                </div>
+                <div class="input-group">
+                    <label>Reading Speed:</label>
+                    <select id="speedSelect">
+                        <option value="0.75">0.75x</option>
+                        <option value="0.90" selected>0.90x (Natural Pace)</option>
+                        <option value="1.00">1.00x</option>
+                        <option value="1.10">1.10x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.50">1.50x</option>
+                    </select>
+                </div>
+            </section>
 
-            <div class="mb-2">
-                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Select Voice</label>
-                <select id="voiceSelect" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                    <option value="">Loading voices...</option>
-                </select>
-            </div>
+            <!-- Status and Controls -->
+            <section class="card control-card">
+                <div id="statusDisplay" class="status-text">Status: Please select a document.</div>
+                <div id="chunkInfoDisplay" class="chunk-text"></div>
 
-            <div>
-                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Reading Speed</label>
-                <select id="speedSelect" class="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                    <option value="0.75">0.75x</option>
-                    <option value="0.90" selected>0.90x (Natural Pace)</option>
-                    <option value="1.00">1.00x</option>
-                    <option value="1.10">1.10x</option>
-                    <option value="1.25">1.25x</option>
-                    <option value="1.50">1.50x</option>
-                    <option value="1.75">1.75x</option>
-                    <option value="2.00">2.00x</option>
-                </select>
-            </div>
-        </section>
+                <div class="button-grid">
+                    <button id="startBtn" class="btn primary-btn" disabled>Start Reading</button>
+                    <button id="pauseBtn" class="btn warning-btn" disabled>Pause</button>
+                </div>
+                <div class="button-grid" style="margin-bottom:10px;">
+                    <button id="resumeBtn" class="btn success-btn" disabled>Resume</button>
+                    <button id="stopBtn" class="btn danger-btn" disabled>Stop</button>
+                </div>
 
-        <!-- Controls Section -->
-        <section class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm mb-4 border border-slate-100 dark:border-slate-700">
-            <div id="statusDisplay" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">Status: Please select a document.</div>
-            <div id="chunkInfoDisplay" class="text-[11px] text-slate-500 dark:text-slate-400 mb-3"></div>
+                <div class="navigation-grid">
+                    <button id="prevChunkBtn" class="btn secondary-btn" disabled>Previous Chunk</button>
+                    <button id="nextChunkBtn" class="btn secondary-btn" disabled>Next Chunk</button>
+                </div>
+            </section>
+        </main>
 
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <button id="startBtn" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2 px-3 rounded-xl text-xs transition-colors shadow-sm">Start Reading</button>
-                <button id="stopBtn" disabled class="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-2 px-3 rounded-xl text-xs transition-colors shadow-sm">Stop</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mb-2.5">
-                <button id="pauseBtn" disabled class="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold py-1.5 px-3 rounded-xl text-xs transition-colors">Pause</button>
-                <button id="resumeBtn" disabled class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-1.5 px-3 rounded-xl text-xs transition-colors">Resume</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                <button id="prevChunkBtn" disabled class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 text-slate-700 dark:text-slate-200 font-medium py-1 px-2.5 rounded-lg text-xs">Previous Session</button>
-                <button id="nextChunkBtn" disabled class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 text-slate-700 dark:text-slate-200 font-medium py-1 px-2.5 rounded-lg text-xs">Next Session</button>
-            </div>
-        </section>
+        <footer>
+            <p>&copy; 2026 Indian AI Factory. All rights reserved.</p>
+        </footer>
     </div>
 
-    <footer class="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-2">
-        <p>&copy; 2026 Indian AI Factory. All rights reserved.</p>
-    </footer>
-
-    <!-- Script Logic -->
     <script>
         let docPagesText = [];
         let currentSessionChunks = [];
@@ -167,9 +322,8 @@
         let selectedVoice = null;
         let sleepTimerTimeout = null;
         let bookmarks = [];
-        let currentFileKey = '';
 
-        const darkModeToggle = document.getElementById('darkModeToggle');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const resumeSection = document.getElementById('resumeSection');
@@ -178,7 +332,6 @@
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const totalPageDisplay = document.getElementById('totalPageDisplay');
         const closeFileBtn = document.getElementById('closeFileBtn');
-        
         const startPageInput = document.getElementById('startPageInput');
         const endPageInput = document.getElementById('endPageInput');
         const sessionLimitSelect = document.getElementById('sessionLimitSelect');
@@ -200,65 +353,66 @@
         const searchResults = document.getElementById('searchResults');
         const addBookmarkBtn = document.getElementById('addBookmarkBtn');
         const bookmarkList = document.getElementById('bookmarkList');
-        const bookmarkCount = document.getElementById('bookmarkCount');
 
-        // Dark Mode Setup
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.documentElement.classList.add('dark');
-            darkModeToggle.textContent = '☀️';
-        }
-
-        darkModeToggle.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('darkMode', isDark);
-            darkModeToggle.textContent = isDark ? '☀️' : '🌙';
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            themeToggleBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light' : '🌙 Dark';
         });
 
-        // Load Voices with priority for natural/female voices
         function loadVoices() {
             voices = synth.getVoices();
+            if (!voices || voices.length === 0) return;
+            
             voiceSelect.innerHTML = '';
             
+            // Sort to put Hindi/English at the top, but keep ALL available voices in the list
             voices.sort((a, b) => {
-                const aPref = a.name.toLowerCase().includes('female') || a.name.toLowerCase().includes('swara') || a.name.toLowerCase().includes('zira') || a.name.toLowerCase().includes('natural') || a.name.toLowerCase().includes('heera');
-                const bPref = b.name.toLowerCase().includes('female') || b.name.toLowerCase().includes('swara') || b.name.toLowerCase().includes('zira') || b.name.toLowerCase().includes('natural') || b.name.toLowerCase().includes('heera');
-                return bPref - aPref;
+                const aLang = a.lang.toLowerCase();
+                const bLang = b.lang.toLowerCase();
+                const aScore = aLang.includes('hi') ? 2 : (aLang.includes('en') ? 1 : 0);
+                const bScore = bLang.includes('hi') ? 2 : (bLang.includes('en') ? 1 : 0);
+                return bScore - aScore;
             });
 
             voices.forEach((voice, index) => {
                 const option = document.createElement('option');
                 option.value = index;
                 option.textContent = `${voice.name} (${voice.lang})`;
-                if ((voice.lang.toLowerCase().includes('hi') || voice.lang.toLowerCase().includes('en')) && !selectedVoice) {
+                if (voice.lang.toLowerCase().includes('hi') && !selectedVoice) {
                     option.selected = true;
                     selectedVoice = voice;
                 }
                 voiceSelect.appendChild(option);
             });
 
-            if (!selectedVoice && voices.length > 0) selectedVoice = voices[0];
+            if (!selectedVoice && voices.length > 0) {
+                selectedVoice = voices[0];
+                voiceSelect.selectedIndex = 0;
+            }
         }
 
-        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
         loadVoices();
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
+        // Fallback for mobile browsers where voices load with slight delay
+        setTimeout(loadVoices, 500);
+        setTimeout(loadVoices, 1500);
 
-        voiceSelect.addEventListener('change', (e) => {
-            selectedVoice = voices[e.target.value];
+        voiceSelect.addEventListener('change', (e) => { 
+            selectedVoice = voices[e.target.value]; 
         });
 
-        // File Handler (PDF, Word .docx, Scanned Images)
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
             statusDisplay.textContent = 'Processing document locally...';
-            currentFileKey = `doc_${file.name}_${file.size}`;
             docPagesText = [];
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
-
+                
                 if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
                     const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     const totalPages = pdfDoc.numPages;
@@ -269,13 +423,12 @@
                         const textContent = await page.getTextContent();
                         let pageText = textContent.items.map(item => item.str).join(' ');
                         pageText = pageText.replace(/\s+/g, ' ').trim();
-                        if (pageText.length > 30) {
+                        if (pageText.length > 20) {
                             extractedTextFound = true;
                         }
                         docPagesText.push({ pageNum: i, text: pageText });
                     }
 
-                    // Fallback to OCR if PDF appears scanned/image-based
                     if (!extractedTextFound) {
                         statusDisplay.textContent = 'Scanned PDF detected. Running local OCR...';
                         for (let i = 1; i <= totalPages; i++) {
@@ -289,8 +442,7 @@
                             
                             const imageUrl = canvas.toDataURL('image/png');
                             const ocrResult = await Tesseract.recognize(imageUrl, 'eng+hin');
-                            let cleanText = ocrResult.data.text.replace(/\s+/g, ' ').trim();
-                            docPagesText.push({ pageNum: i, text: cleanText });
+                            docPagesText.push({ pageNum: i, text: ocrResult.data.text.replace(/\s+/g, ' ').trim() });
                         }
                     }
                 } 
@@ -299,7 +451,7 @@
                     let fullText = result.value || '';
                     fullText = fullText.replace(/\s+/g, ' ').trim();
 
-                    const chunkSize = 1200;
+                    const chunkSize = 1000;
                     for (let i = 0; i < fullText.length; i += chunkSize) {
                         let chunk = fullText.substring(i, i + chunkSize);
                         let pageNum = Math.floor(i / chunkSize) + 1;
@@ -325,18 +477,14 @@
                 startPageInput.value = 1;
                 endPageInput.value = docPagesText.length;
 
-                prepareAllChunks();
-
-                if (localStorage.getItem('progress_' + currentFileKey)) {
+                const savedProgress = localStorage.getItem('doc_progress_' + file.name);
+                if (savedProgress) {
                     resumeSection.classList.remove('hidden');
-                } else {
-                    resumeSection.classList.add('hidden');
                 }
 
-                loadBookmarks();
                 statusDisplay.textContent = 'Document successfully loaded!';
                 startBtn.disabled = false;
-            } catch (error) {
+            } catch (err) {
                 statusDisplay.textContent = 'Error: Could not read document.';
             }
         });
@@ -351,16 +499,17 @@
             startBtn.disabled = true;
             statusDisplay.textContent = 'Document closed.';
             chunkInfoDisplay.textContent = '';
-            synth.cancel();
         });
 
-        function prepareAllChunks() {
+        function prepareChunksFrom(start, end) {
             const limit = parseInt(sessionLimitSelect.value);
+            // Filter pages starting strictly from user's specified startPage up to endPage
+            const filteredPages = docPagesText.filter(p => p.pageNum >= start && p.pageNum <= end);
             currentSessionChunks = [];
 
-            for (let i = 0; i < docPagesText.length; i += limit) {
-                let chunkPages = docPagesText.slice(i, i + limit);
-                let combinedText = chunkPages.map(p => `Unit ${p.pageNum}. ... ${p.text}`).join(' ... ');
+            for (let i = 0; i < filteredPages.length; i += limit) {
+                let chunkPages = filteredPages.slice(i, i + limit);
+                let combinedText = chunkPages.map(p => `Unit ${p.pageNum}. ${p.text}`).join(' ');
                 let rangeLabel = `Part ${chunkPages[0].pageNum}–${chunkPages[chunkPages.length - 1].pageNum}`;
                 currentSessionChunks.push({ 
                     label: rangeLabel, 
@@ -370,25 +519,6 @@
                 });
             }
         }
-
-        sessionLimitSelect.addEventListener('change', () => {
-            if (docPagesText.length > 0) {
-                prepareAllChunks();
-            }
-        });
-
-        resumeProgressBtn.addEventListener('click', () => {
-            const saved = JSON.parse(localStorage.getItem('progress_' + currentFileKey));
-            if (saved) {
-                startPageInput.value = saved.startPage;
-                endPageInput.value = saved.endPage;
-                sessionLimitSelect.value = saved.limit || 10;
-                prepareAllChunks();
-                currentChunkIndex = saved.chunkIndex || 0;
-                playCurrentChunk();
-                setupSleepTimer();
-            }
-        });
 
         startBtn.addEventListener('click', () => {
             if (docPagesText.length === 0) return;
@@ -400,25 +530,29 @@
                 return;
             }
 
-            prepareAllChunks();
-
-            // Find the chunk containing or starting at startPage
-            let targetChunkIndex = currentSessionChunks.findIndex(chunk => startPage >= chunk.startPage && startPage <= chunk.endPage);
-            if (targetChunkIndex === -1) {
-                targetChunkIndex = currentSessionChunks.findIndex(chunk => chunk.startPage >= startPage);
-                if (targetChunkIndex === -1) targetChunkIndex = 0;
+            // Generate chunks starting precisely from startPage
+            prepareChunksFrom(startPage, endPage);
+            
+            if (currentSessionChunks.length === 0) {
+                statusDisplay.textContent = 'Error: No content found in the selected range.';
+                return;
             }
 
-            currentChunkIndex = targetChunkIndex;
+            currentChunkIndex = 0;
             playCurrentChunk();
             setupSleepTimer();
         });
 
-        function detectLanguage(text) {
-            const devanagariMatches = text.match(/[\u0900-\u097F]/g);
-            const hindiRatio = devanagariMatches ? devanagariMatches.length / text.length : 0;
-            return hindiRatio > 0.03 ? 'hi-IN' : 'en-US';
-        }
+        resumeProgressBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const saved = JSON.parse(localStorage.getItem('doc_progress_' + file.name));
+            if (saved) {
+                startPageInput.value = saved.startPage;
+                endPageInput.value = saved.endPage;
+                startBtn.click();
+            }
+        });
 
         function playCurrentChunk() {
             if (currentSessionChunks.length === 0) return;
@@ -427,34 +561,20 @@
             const chunk = currentSessionChunks[currentChunkIndex];
             statusDisplay.textContent = `Currently reading: ${chunk.label}`;
             chunkInfoDisplay.textContent = `Chunk ${currentChunkIndex + 1} / ${currentSessionChunks.length}`;
-            
-            if (currentFileKey) {
-                localStorage.setItem('progress_' + currentFileKey, JSON.stringify({
+
+            const file = fileInput.files[0];
+            if (file) {
+                localStorage.setItem('doc_progress_' + file.name, JSON.stringify({
                     startPage: startPageInput.value,
                     endPage: endPageInput.value,
-                    limit: sessionLimitSelect.value,
                     chunkIndex: currentChunkIndex
                 }));
             }
 
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: chunk.label,
-                    artist: 'Smart Document Audio - Indian AI Factory',
-                    album: 'Study Material'
-                });
-                navigator.mediaSession.setActionHandler('play', () => synth.resume());
-                navigator.mediaSession.setActionHandler('pause', () => synth.pause());
-                navigator.mediaSession.setActionHandler('stop', () => synth.cancel());
-            }
-
             const utterance = new SpeechSynthesisUtterance(chunk.text);
-            utterance.lang = detectLanguage(chunk.text);
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
+            const hasHindi = /[\u0900-\u097F]/.test(chunk.text);
+            utterance.lang = hasHindi ? 'hi-IN' : 'en-US';
+            if (selectedVoice) utterance.voice = selectedVoice;
             utterance.rate = parseFloat(speedSelect.value);
 
             utterance.onend = () => {
@@ -485,55 +605,19 @@
             }
         }
 
-        pauseBtn.addEventListener('click', () => {
-            if (synth.speaking) {
-                synth.pause();
-                statusDisplay.textContent = 'Paused.';
-            }
-        });
-
-        resumeBtn.addEventListener('click', () => {
-            if (synth.paused) {
-                synth.resume();
-                statusDisplay.textContent = 'Resumed.';
-            }
-        });
-
-        stopBtn.addEventListener('click', () => {
-            synth.cancel();
-            clearTimeout(sleepTimerTimeout);
-            statusDisplay.textContent = 'Reading stopped.';
-        });
-
-        nextChunkBtn.addEventListener('click', () => {
-            if (currentChunkIndex < currentSessionChunks.length - 1) {
-                currentChunkIndex++;
-                playCurrentChunk();
-            }
-        });
-
-        prevChunkBtn.addEventListener('click', () => {
-            if (currentChunkIndex > 0) {
-                currentChunkIndex--;
-                playCurrentChunk();
-            }
-        });
-
         searchBtn.addEventListener('click', () => {
             const query = searchInput.value.trim().toLowerCase();
-            searchResults.innerHTML = '';
             if (!query || docPagesText.length === 0) return;
-
+            searchResults.innerHTML = '';
             let matches = docPagesText.filter(p => p.text.toLowerCase().includes(query));
             if (matches.length === 0) {
-                searchResults.innerHTML = '<p class="text-slate-500">No results found.</p>';
+                searchResults.innerHTML = '<p>No results found.</p>';
                 return;
             }
-
             matches.slice(0, 5).forEach(m => {
                 let div = document.createElement('div');
-                div.className = 'p-1.5 bg-slate-50 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 cursor-pointer flex justify-between items-center';
-                div.innerHTML = `<span>Part ${m.pageNum}</span> <span class="text-indigo-600 underline text-[10px]">Listen</span>`;
+                div.className = 'bookmark-item';
+                div.textContent = `Part ${m.pageNum}: ${m.text.substring(0, 40)}...`;
                 div.onclick = () => {
                     startPageInput.value = m.pageNum;
                     startBtn.click();
@@ -542,30 +626,22 @@
             });
         });
 
-        function loadBookmarks() {
-            if (!currentFileKey) return;
-            bookmarks = JSON.parse(localStorage.getItem('bookmarks_' + currentFileKey)) || [];
-            renderBookmarks();
-        }
-
         addBookmarkBtn.addEventListener('click', () => {
             if (docPagesText.length === 0) return;
             let currentChunk = currentSessionChunks[currentChunkIndex];
             if (!currentChunk) return;
             if (!bookmarks.includes(currentChunk.startPage)) {
                 bookmarks.push(currentChunk.startPage);
-                localStorage.setItem('bookmarks_' + currentFileKey, JSON.stringify(bookmarks));
                 renderBookmarks();
             }
         });
 
         function renderBookmarks() {
             bookmarkList.innerHTML = '';
-            bookmarkCount.textContent = `Bookmarks: ${bookmarks.length}`;
             bookmarks.forEach(page => {
                 let div = document.createElement('div');
-                div.className = 'p-1.5 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-900 flex justify-between items-center cursor-pointer';
-                div.innerHTML = `<span>Part ${page}</span> <span class="text-amber-600 font-semibold underline text-[10px]">Go</span>`;
+                div.className = 'bookmark-item';
+                div.textContent = `⭐ Bookmark: Part ${page}`;
                 div.onclick = () => {
                     startPageInput.value = page;
                     startBtn.click();
@@ -573,6 +649,12 @@
                 bookmarkList.appendChild(div);
             });
         }
+
+        pauseBtn.addEventListener('click', () => { if (synth.speaking) synth.pause(); statusDisplay.textContent = 'Paused.'; });
+        resumeBtn.addEventListener('click', () => { if (synth.paused) synth.resume(); statusDisplay.textContent = 'Resumed.'; });
+        stopBtn.addEventListener('click', () => { synth.cancel(); statusDisplay.textContent = 'Reading stopped.'; });
+        nextChunkBtn.addEventListener('click', () => { if (currentChunkIndex < currentSessionChunks.length - 1) { currentChunkIndex++; playCurrentChunk(); } });
+        prevChunkBtn.addEventListener('click', () => { if (currentChunkIndex > 0) { currentChunkIndex--; playCurrentChunk(); } });
     </script>
 </body>
 </html>
